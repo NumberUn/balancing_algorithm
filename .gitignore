@@ -1,0 +1,9 @@
+.idea/
+*.pyc
+venv
+.env
+.env.*
+__pycache__
+config.ini
+test.py
+/clients
