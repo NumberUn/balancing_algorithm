@@ -39,7 +39,7 @@ class Balancing(BaseTask):
                 await self.setup_mq(loop)
                 for exchange, client in self.clients.items():
                     client.get_position()
-                await self.__close_all_open_orders()
+                # await self.__close_all_open_orders()
                 await self.update_balances()
                 await self.__get_positions()
                 if self.check_for_empty_positions:
@@ -239,7 +239,6 @@ class Balancing(BaseTask):
     @try_exc_async
     async def __balancing_positions(self, session: aiohttp.ClientSession) -> None:
         for coin, disbalance in self.disbalances.items():
-            tasks = []
             tasks_data = {}
             if abs(disbalance['usd']) > int(config['SETTINGS']['MIN_DISBALANCE']):
                 side = 'sell' if disbalance['usd'] > 0 else 'buy'
@@ -252,11 +251,10 @@ class Balancing(BaseTask):
             client_id = f"api_balancing_{str(uuid.uuid4()).replace('-', '')[:20]}"
             result = await self.clients[exchange].create_order(symbol=symbol, side=side, session=session, client_id=client_id)
             tasks_data.update({exchange: {'order_place_time': int(time.time() * 1000)}})
-            if tasks:
-                await self.place_and_save_orders(result, tasks_data, coin, side)
-                await self.save_disbalance(coin, self.clients[exchange])
-                await self.save_balance()
-                await self.send_balancing_message(exchange, coin, side)
+            await self.place_and_save_orders(result, tasks_data, coin, side)
+            await self.save_disbalance(coin, self.clients[exchange])
+            await self.save_balance()
+            await self.send_balancing_message(exchange, coin, side)
 
     @try_exc_async
     async def get_exchange_and_price(self, size: float, coin: str, side: str) -> str:
