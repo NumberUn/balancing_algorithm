@@ -243,16 +243,16 @@ class Balancing(BaseTask):
             else:
                 continue
             exchange, price, size = await self.get_exchange_and_price(abs(disbalance['coin']), coin, side)
-            print(f"{exchange} BALANCING COIN FOR: {self.clients[exchange].amount}")
+            print(f"{exchange} BALANCING COIN FOR: {size}")
             symbol = self.clients[exchange].markets[coin]
             client_id = f"api_balancing_{str(uuid.uuid4()).replace('-', '')[:20]}"
             result = await self.clients[exchange].create_order(symbol=symbol, side=side, price=price, size=size,
                                                                session=session, client_id=client_id)
             tasks_data.update({exchange: {'order_place_time': int(time.time() * 1000)}})
-            await self.place_and_save_orders(result, tasks_data, coin, side)
-            await self.save_disbalance(coin, self.clients[exchange])
+            await self.place_and_save_orders(result, tasks_data, coin, side, size, price)
+            await self.save_disbalance(coin, price)
             await self.save_balance()
-            await self.send_balancing_message(exchange, coin, side)
+            await self.send_balancing_message(exchange, coin, side, size, price)
 
     @try_exc_async
     async def get_exchange_and_price(self, size: float, coin: str, side: str) -> str:
@@ -264,12 +264,12 @@ class Balancing(BaseTask):
         return top_exchange, price, size
 
     @try_exc_async
-    async def send_balancing_message(self, exchange: str, coin: str, side: str) -> None:
+    async def send_balancing_message(self, exchange: str, coin: str, side: str, size: float, price: float) -> None:
         message = 'BALANCING PROCEED:\n'
         message += f"COIN: {coin}\n"
         message += f"SIDE: {side}\n"
-        message += f"{exchange} ORDER SIZE, {coin}: {self.clients[exchange].amount}\n"
-        message += f"{exchange} PRICE: {self.clients[exchange].price}\n"
+        message += f"{exchange} ORDER SIZE, {coin}: {size}\n"
+        message += f"{exchange} PRICE: {price}\n"
         send_message = {
             "chat_id": self.chat_id,
             "msg": message,
@@ -282,14 +282,10 @@ class Balancing(BaseTask):
                                    queue_name=RabbitMqQueues.TELEGRAM)
 
     @try_exc_async
-    async def place_and_save_orders(self, res: dict, tasks_data: dict, coin: str, side: str) -> None:
+    async def place_and_save_orders(self, res: dict, tasks_data: dict, coin: str, side: str, size: float, price: float):
         exchange = res['exchange_name']
         order_place_time = res['timestamp'] - tasks_data[exchange]['order_place_time']
-        await self.save_orders(self.clients[exchange],
-                               self.clients[exchange].price,
-                               self.clients[exchange].amount,
-                               order_place_time,
-                               coin, side)
+        await self.save_orders(self.clients[exchange], price, size, order_place_time, coin, side)
 
     @try_exc_async
     async def save_balance(self) -> None:
@@ -322,9 +318,9 @@ class Balancing(BaseTask):
             'exchange': client.EXCHANGE_NAME,
             'side': side,
             'symbol': client.markets[coin],
-            'expect_price': client.price,
-            'expect_amount_coin': client.amount,
-            'expect_amount_usd': client.amount * client.price,
+            'expect_price': expect_price,
+            'expect_amount_coin': amount,
+            'expect_amount_usd': amount * expect_price,
             'expect_fee': client.taker_fee * (amount * expect_price),
             'factual_price': 0,
             'factual_amount_coin': 0,
@@ -357,7 +353,7 @@ class Balancing(BaseTask):
         client.LAST_ORDER_ID = 'default'
 
     @try_exc_async
-    async def save_disbalance(self, coin: str, client) -> None:
+    async def save_disbalance(self, coin: str, price: float) -> None:
         message = {
             'id': self.disbalance_id,
             'datetime': datetime.utcnow(),
@@ -365,7 +361,7 @@ class Balancing(BaseTask):
             'coin_name': coin,
             'position_coin': self.disbalances[coin]['coin'],
             'position_usd': round(self.disbalances[coin]['usd'], 1),
-            'price': client.price,
+            'price': price,
             'threshold': float(config['SETTINGS']['MIN_DISBALANCE']),
             'status': 'Processing'
         }
