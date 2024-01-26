@@ -225,11 +225,8 @@ class Balancing(BaseTask):
                     top_exchange = exchange
                     best_price = ob['bids'][0][0]
         symbol = self.clients[top_exchange].markets[coin]
-        step_size = self.clients[top_exchange].instruments[symbol]['step_size']
-        size = round(amount / step_size) * step_size
-        self.clients[top_exchange].amount = size
-        self.clients[top_exchange].fit_sizes(best_price, symbol)
-        return top_exchange
+        price, size = self.clients[top_exchange].fit_sizes(best_price, amount, symbol)
+        return top_exchange, price, size
 
         # max_amount = max([client.expect_amount_coin for client in self.clients.values()])
         #
@@ -245,11 +242,12 @@ class Balancing(BaseTask):
                 self.disbalance_id = uuid.uuid4()  # noqa
             else:
                 continue
-            exchange = await self.get_exchange_and_price(abs(disbalance['coin']), coin, side)
+            exchange, price, size = await self.get_exchange_and_price(abs(disbalance['coin']), coin, side)
             print(f"{exchange} BALANCING COIN FOR: {self.clients[exchange].amount}")
             symbol = self.clients[exchange].markets[coin]
             client_id = f"api_balancing_{str(uuid.uuid4()).replace('-', '')[:20]}"
-            result = await self.clients[exchange].create_order(symbol=symbol, side=side, session=session, client_id=client_id)
+            result = await self.clients[exchange].create_order(symbol=symbol, side=side, price=price, size=size,
+                                                               session=session, client_id=client_id)
             tasks_data.update({exchange: {'order_place_time': int(time.time() * 1000)}})
             await self.place_and_save_orders(result, tasks_data, coin, side)
             await self.save_disbalance(coin, self.clients[exchange])
@@ -262,8 +260,8 @@ class Balancing(BaseTask):
         for ex, client in self.clients.items():
             if client.markets.get(coin) and client.instruments[client.markets[coin]]['min_size'] <= size:
                 exchanges.append(ex)
-        best_exchange = await self.get_top_price_exchange(size, exchanges, coin, side)
-        return best_exchange
+        top_exchange, price, size = await self.get_top_price_exchange(size, exchanges, coin, side)
+        return top_exchange, price, size
 
     @try_exc_async
     async def send_balancing_message(self, exchange: str, coin: str, side: str) -> None:
