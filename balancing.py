@@ -251,7 +251,7 @@ class Balancing(BaseTask):
             tasks_data.update({exchange: {'order_place_time': int(time.time() * 1000)}})
             await self.place_and_save_orders(result, tasks_data, coin, side, size, price)
             await self.save_disbalance(coin, price)
-            await self.save_balance()
+            # await self.save_balance()
             await self.send_balancing_message(exchange, coin, side, size, price)
 
     @try_exc_async
@@ -296,7 +296,6 @@ class Balancing(BaseTask):
             'chat_id': self.chat_id,
             'telegram_bot': self.chat_token,
         }
-
         await self.publish_message(connect=self.mq,
                                    message=message,
                                    routing_key=RabbitMqQueues.CHECK_BALANCE,
