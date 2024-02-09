@@ -209,8 +209,6 @@ class Balancing(BaseTask):
         best_price = None
         for exchange in exchanges:
             symbol = self.clients[exchange].markets[coin]
-            if not amount > self.clients[exchange].instruments[symbol]['min_size']:
-                continue
             ob = await self.clients[exchange].get_orderbook_by_symbol(symbol)
             self.clients[exchange].orderbook[symbol] = ob
             if side == 'buy':
