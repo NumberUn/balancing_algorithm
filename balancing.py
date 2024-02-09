@@ -249,7 +249,7 @@ class Balancing(BaseTask):
             result = await self.clients[exchange].create_order(symbol=symbol, side=side, price=price, size=size,
                                                                session=session, client_id=client_id)
             tasks_data.update({exchange: {'order_place_time': int(time.time() * 1000)}})
-            await self.place_and_save_orders(result, tasks_data, coin, side, size, price)
+            # await self.place_and_save_orders(result, tasks_data, coin, side, size, price)
             await self.save_disbalance(coin, price)
             # await self.save_balance()
             await self.send_balancing_message(exchange, coin, side, size, price)
