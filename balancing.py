@@ -83,7 +83,7 @@ class Balancing(BaseTask):
 
     @try_exc_regular
     def check_for_empty_positions(self):
-        for client in self.clients:
+        for client in self.clients.values():
             if not client.get_positions():
                 return False
         # len_new_pos = 0
