@@ -42,9 +42,9 @@ class Balancing(BaseTask):
                 await self.__close_all_open_orders()
                 await self.update_balances()
                 await self.__get_positions()
-                if self.check_for_empty_positions:
-                    await self.__get_total_positions()
-                    await self.send_positions_message(self.create_positions_message())
+                await self.send_positions_message(self.create_positions_message())
+                await self.__get_total_positions()
+                if self.check_for_empty_positions():
                     await self.__balancing_positions(session)
                 else:
                     message = f"ALERT: SIGNIFICANT POSITIONS CHANGE. SKIP BALANCING.\n"
@@ -83,14 +83,17 @@ class Balancing(BaseTask):
 
     @try_exc_regular
     def check_for_empty_positions(self):
-        len_new_pos = 0
-        len_old_pos = 0
-        for positions in self.positions.values():
-            len_new_pos += len(list(positions))
-        for positions in self.last_positions.values():
-            len_old_pos += len(list(positions))
-        if abs(len_old_pos - len_new_pos) >= 2:
-            return False
+        for client in self.clients:
+            if not client.get_positions():
+                return False
+        # len_new_pos = 0
+        # len_old_pos = 0
+        # for positions in self.positions.values():
+        #     len_new_pos += len(list(positions))
+        # for positions in self.last_positions.values():
+        #     len_old_pos += len(list(positions))
+        # if abs(len_old_pos - len_new_pos) >= 3:
+        #
         return True
 
     @staticmethod
@@ -249,9 +252,9 @@ class Balancing(BaseTask):
             result = await self.clients[exchange].create_order(symbol=symbol, side=side, price=price, size=size,
                                                                session=session, client_id=client_id)
             tasks_data.update({exchange: {'order_place_time': int(time.time() * 1000)}})
-            # await self.place_and_save_orders(result, tasks_data, coin, side, size, price)
+            await self.place_and_save_orders(result, tasks_data, coin, side, size, price)
             await self.save_disbalance(coin, price)
-            # await self.save_balance()
+            await self.save_balance()
             await self.send_balancing_message(exchange, coin, side, size, price)
 
     @try_exc_async
