@@ -259,6 +259,7 @@ class Balancing(BaseTask):
                 await self.save_disbalance(coin, price)
                 await self.save_balance()
                 await self.send_balancing_message(exchange, coin, side, size, price)
+            await asyncio.sleep(0.5)
 
     @try_exc_async
     async def get_exchange_and_price(self, size: float, coin: str, side: str) -> str:

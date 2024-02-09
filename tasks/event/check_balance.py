@@ -37,12 +37,10 @@ class CheckBalance:
         for client in self.base_task.clients.values():
             balance_id = uuid.uuid4()
             await self.__save_balance(client, balance_id)
-
             for symbol in client.get_positions().copy():
                 while not client.orderbook.get(symbol):
+                    await asyncio.sleep(0.5)
                     client.orderbook[symbol] = await client.get_orderbook_by_symbol(symbol)
-                    if not client.orderbook.get(symbol):
-                        time.sleep(5)
                 await self.__save_balance_detalization(symbol, client, balance_id)
 
     @try_exc_async
