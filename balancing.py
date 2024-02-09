@@ -39,7 +39,7 @@ class Balancing(BaseTask):
                 await self.setup_mq(loop)
                 for exchange, client in self.clients.items():
                     client.get_position()
-                # await self.__close_all_open_orders()
+                await self.__close_all_open_orders()
                 await self.update_balances()
                 await self.__get_positions()
                 if self.check_for_empty_positions:
