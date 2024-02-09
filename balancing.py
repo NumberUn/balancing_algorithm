@@ -42,8 +42,8 @@ class Balancing(BaseTask):
                 await self.__close_all_open_orders()
                 await self.update_balances()
                 await self.__get_positions()
-                await self.send_positions_message(self.create_positions_message())
                 await self.__get_total_positions()
+                await self.send_positions_message(self.create_positions_message())
                 if self.check_for_empty_positions():
                     await self.__balancing_positions(session)
                 else:
