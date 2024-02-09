@@ -322,7 +322,7 @@ class Balancing(BaseTask):
             'exchange_order_id': client.LAST_ORDER_ID,
             'type': 'GTT' if client.EXCHANGE_NAME == 'DYDX' else 'GTC',
             'status': 'Processing',
-            'exchange': client.EXCHANGE_NAME,
+            'exchange_name': client.EXCHANGE_NAME,
             'side': side,
             'symbol': client.markets[coin],
             'expect_price': expect_price,
