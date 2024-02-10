@@ -209,24 +209,27 @@ class Balancing(BaseTask):
         best_price = None
         for exchange in exchanges:
             symbol = self.clients[exchange].markets[coin]
+            tick = self.clients[exchange].instruments[symbol]['tick_size']
             ob = await self.clients[exchange].get_orderbook_by_symbol(symbol)
             self.clients[exchange].orderbook[symbol] = ob
             if side == 'buy':
+                pretend_price = ob['asks'][0][0] - tick
                 if best_price:
-                    if ob['asks'][0][0] < best_price:
+                    if pretend_price < best_price:
                         top_exchange = exchange
-                        best_price = ob['asks'][0][0]
+                        best_price = pretend_price
                 else:
                     top_exchange = exchange
-                    best_price = ob['asks'][0][0]
+                    best_price = pretend_price
             else:
+                pretend_price = ob['bids'][0][0] + tick
                 if best_price:
-                    if ob['bids'][0][0] > best_price:
+                    if pretend_price > best_price:
                         top_exchange = exchange
-                        best_price = ob['bids'][0][0]
+                        best_price = pretend_price
                 else:
                     top_exchange = exchange
-                    best_price = ob['bids'][0][0]
+                    best_price = pretend_price
         if top_exchange:
             symbol = self.clients[top_exchange].markets[coin]
             price, size = self.clients[top_exchange].fit_sizes(best_price, amount, symbol)
