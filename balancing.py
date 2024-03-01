@@ -255,10 +255,10 @@ class Balancing(BaseTask):
                 print(f"{exchange} BALANCING COIN FOR: {size}")
                 symbol = self.clients[exchange].markets[coin]
                 client_id = f"api_balancing_{str(uuid.uuid4()).replace('-', '')[:20]}"
+                time_sent = time.time()
                 result = await self.clients[exchange].create_order(symbol=symbol, side=side, price=price, size=size,
                                                                    session=session, client_id=client_id)
-                tasks_data.update({exchange: {'order_place_time': int(time.time() * 1000)}})
-                await self.place_and_save_orders(result, tasks_data, coin, side, size, price)
+                await self.save_orders(result, price, size, coin, side, time_sent)
                 await self.save_disbalance(coin, price)
                 await self.save_balance()
                 await self.send_balancing_message(exchange, coin, side, size, price)
@@ -292,12 +292,6 @@ class Balancing(BaseTask):
                                    queue_name=RabbitMqQueues.TELEGRAM)
 
     @try_exc_async
-    async def place_and_save_orders(self, res: dict, tasks_data: dict, coin: str, side: str, size: float, price: float):
-        exchange = res['exchange_name']
-        order_place_time = res['timestamp'] - tasks_data[exchange]['order_place_time']
-        await self.save_orders(self.clients[exchange], price, size, order_place_time, coin, side)
-
-    @try_exc_async
     async def save_balance(self) -> None:
         message = {
             'parent_id': self.disbalance_id,
@@ -313,7 +307,9 @@ class Balancing(BaseTask):
                                    queue_name=RabbitMqQueues.CHECK_BALANCE)
 
     @try_exc_async
-    async def save_orders(self, client, expect_price: float, amount: float, order_place_time, coin: str, side: str):
+    async def save_orders(self, res: dict, expect_price: float, amount: float, coin: str,  side: str, time_sent: float):
+        exchange = res['exchange_name']
+        client = self.clients[exchange]
         order_id = uuid.uuid4()
         message = {
             'id': order_id,
@@ -335,9 +331,11 @@ class Balancing(BaseTask):
             'factual_amount_coin': 0,
             'factual_amount_usd': 0,
             'factual_fee': client.taker_fee,
-            'order_place_time': order_place_time,
-            'env': self.env
-        }
+            'order_place_time': res['timestamp'],
+            'env': self.env,
+            'oneway_ping_orderbook': 0,
+            'oneway_ping_order': res['timestamp'] / 1000 - time_sent,
+            'inner_ping': 0}
 
         if client.LAST_ORDER_ID == 'default':
             error_message = {
