@@ -244,7 +244,6 @@ class Balancing(BaseTask):
     @try_exc_async
     async def __balancing_positions(self, session: aiohttp.ClientSession) -> None:
         for coin, disbalance in self.disbalances.items():
-            tasks_data = {}
             if abs(disbalance['usd']) > int(config['SETTINGS']['MIN_DISBALANCE']):
                 side = 'sell' if disbalance['usd'] > 0 else 'buy'
                 self.disbalance_id = uuid.uuid4()  # noqa
@@ -268,7 +267,8 @@ class Balancing(BaseTask):
     async def get_exchange_and_price(self, size: float, coin: str, side: str) -> str:
         exchanges = []
         for ex, client in self.clients.items():
-            if client.markets.get(coin) and client.instruments[client.markets[coin]]['min_size'] <= size:
+            market = client.markets.get(coin, 'default')
+            if client.positions.get(market) and client.instruments[client.markets[coin]]['min_size'] <= size:
                 exchanges.append(ex)
         top_exchange, price, size = await self.get_top_price_exchange(size, exchanges, coin, side)
         return top_exchange, price, size
@@ -357,7 +357,9 @@ class Balancing(BaseTask):
                                    exchange_name=RabbitMqQueues.get_exchange_name(RabbitMqQueues.ORDERS),
                                    queue_name=RabbitMqQueues.ORDERS)
 
-        client.LAST_ORDER_ID = 'default'
+        client.
+        ot\
+            = 'default'
 
     @try_exc_async
     async def save_disbalance(self, coin: str, price: float) -> None:
