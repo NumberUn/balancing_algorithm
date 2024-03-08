@@ -357,10 +357,6 @@ class Balancing(BaseTask):
                                    exchange_name=RabbitMqQueues.get_exchange_name(RabbitMqQueues.ORDERS),
                                    queue_name=RabbitMqQueues.ORDERS)
 
-        client.
-        ot\
-            = 'default'
-
     @try_exc_async
     async def save_disbalance(self, coin: str, price: float) -> None:
         message = {
