@@ -29,6 +29,7 @@ class Balancing(BaseTask):
         self.telegram = Telegram()
         self.orderbooks = {}
         self.env = config['SETTINGS']['ENV']
+
         time.sleep(15)
 
     @try_exc_async
@@ -261,14 +262,13 @@ class Balancing(BaseTask):
                 await self.save_disbalance(coin, price)
                 await self.save_balance()
                 await self.send_balancing_message(exchange, coin, side, size, price)
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(1)
 
     @try_exc_async
     async def get_exchange_and_price(self, size: float, coin: str, side: str) -> str:
         exchanges = []
         for ex, client in self.clients.items():
-            market = client.markets.get(coin, 'default')
-            if client.positions.get(market) and client.instruments[client.markets[coin]]['min_size'] <= size:
+            if client.instruments[client.markets[coin]]['min_size'] <= size:
                 exchanges.append(ex)
         top_exchange, price, size = await self.get_top_price_exchange(size, exchanges, coin, side)
         return top_exchange, price, size
