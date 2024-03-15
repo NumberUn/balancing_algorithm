@@ -214,7 +214,7 @@ class Balancing(BaseTask):
             ob = await self.clients[exchange].get_orderbook_by_symbol(symbol)
             self.clients[exchange].orderbook[symbol] = ob
             if side == 'buy':
-                pretend_price = ob['asks'][0][0] - tick
+                pretend_price = ob['asks'][0][0] + 5 * tick
                 if best_price:
                     if pretend_price < best_price:
                         top_exchange = exchange
@@ -223,7 +223,7 @@ class Balancing(BaseTask):
                     top_exchange = exchange
                     best_price = pretend_price
             else:
-                pretend_price = ob['bids'][0][0] + tick
+                pretend_price = ob['bids'][0][0] - 5 * tick
                 if best_price:
                     if pretend_price > best_price:
                         top_exchange = exchange
