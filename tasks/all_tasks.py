@@ -24,7 +24,6 @@ class RabbitMqQueues:
     SAVE_MISSED_ORDERS = 'logger.event.save_missed_orders'
     BOT_CONFIG = 'logger.event.insert_bot_config'
 
-
     @staticmethod
     @try_exc_regular
     def get_exchange_name(routing_key: str):

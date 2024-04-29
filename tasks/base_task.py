@@ -21,7 +21,7 @@ class BaseTask:
         self.exchanges = config['SETTINGS']['EXCHANGES'].split(',')
         self.clients = {}
         for exchange in self.exchanges:
-            client = ALL_CLIENTS[exchange](keys=config[exchange], leverage=leverage)
+            client = ALL_CLIENTS[exchange](keys=config[exchange], leverage=leverage, state='Balancer')
             self.clients.update({exchange: client})
 
     @staticmethod
