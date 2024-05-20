@@ -275,7 +275,7 @@ class Balancing(BaseTask):
                     av_balances = client.get_available_balance()
                     av_coin = av_balances.get(side) if av_balances.get(side) > 0 else av_balances.get(mrkt, {}).get(side)
                     if av_coin > 0:
-                        ob = await self.clients[exchange].get_orderbook_by_symbol(symbol)
+                        ob = await client.get_orderbook_by_symbol(mrkt)
                         change = ob['asks'][0][0] + ob['bids'][0][0]
                         if av_coin * change >= size:
                             exchanges.append(ex)
