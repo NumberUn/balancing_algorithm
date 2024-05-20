@@ -1,5 +1,6 @@
 import asyncio
 import time
+import traceback
 from datetime import datetime
 import uuid
 import aiohttp
@@ -268,8 +269,11 @@ class Balancing(BaseTask):
     async def get_exchange_and_price(self, size: float, coin: str, side: str) -> str:
         exchanges = []
         for ex, client in self.clients.items():
-            if client.instruments[client.markets[coin]]['min_size'] <= size:
-                exchanges.append(ex)
+            try:
+                if client.instruments[client.markets[coin]]['min_size'] <= size:
+                    exchanges.append(ex)
+            except:
+                traceback.print_exc()
         top_exchange, price, size = await self.get_top_price_exchange(size, exchanges, coin, side)
         return top_exchange, price, size
 
