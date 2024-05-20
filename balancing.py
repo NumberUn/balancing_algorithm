@@ -212,7 +212,7 @@ class Balancing(BaseTask):
         for exchange in exchanges:
             symbol = self.clients[exchange].markets[coin]
             tick = self.clients[exchange].instruments[symbol]['tick_size']
-            ob = await self.clients[exchange].get_orderbook_by_symbol(symbol)
+            ob = self.clients[exchange].get_orderbook(symbol)
             self.clients[exchange].orderbook[symbol] = ob
             if side == 'buy':
                 pretend_price = ob['asks'][0][0] + 5 * tick
@@ -270,8 +270,16 @@ class Balancing(BaseTask):
         exchanges = []
         for ex, client in self.clients.items():
             try:
-                if client.instruments[client.markets[coin]]['min_size'] <= size:
-                    exchanges.append(ex)
+                mrkt = client.markets[coin]
+                if client.instruments[mrkt]['min_size'] <= size:
+                    av_balances = client.get_available_balance()
+                    av_coin = av_balances.get(side) if av_balances.get(side) > 0 else av_balances.get(mrkt, {}).get(side)
+                    if av_coin > 0:
+                        ob = await self.clients[exchange].get_orderbook_by_symbol(symbol)
+                        change = ob['asks'][0][0] + ob['bids'][0][0]
+                        if av_coin * change >= size:
+                            exchanges.append(ex)
+
             except:
                 traceback.print_exc()
         top_exchange, price, size = await self.get_top_price_exchange(size, exchanges, coin, side)
