@@ -212,7 +212,7 @@ class Balancing(BaseTask):
         for exchange in exchanges:
             symbol = self.clients[exchange].markets[coin]
             tick = self.clients[exchange].instruments[symbol]['tick_size']
-            ob = self.clients[exchange].get_orderbook_by_symbol(symbol)
+            ob = await self.clients[exchange].get_orderbook_by_symbol(symbol)
             self.clients[exchange].orderbook[symbol] = ob
             if side == 'buy':
                 pretend_price = ob['asks'][0][0] + 5 * tick
