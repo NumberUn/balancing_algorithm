@@ -246,12 +246,14 @@ class Balancing(BaseTask):
     @try_exc_async
     async def __balancing_positions(self, session: aiohttp.ClientSession) -> None:
         for coin, disbalance in self.disbalances.items():
+            # print(coin, disbalance)
             if abs(disbalance['usd']) > int(config['SETTINGS']['MIN_DISBALANCE']):
                 side = 'sell' if disbalance['usd'] > 0 else 'buy'
                 self.disbalance_id = uuid.uuid4()  # noqa
             else:
                 continue
             exchange, price, size = await self.get_exchange_and_price(abs(disbalance['coin']), coin, side)
+            # print(f"BALANCING ON {exchange=}")
             if exchange:
                 print(f"{exchange} BALANCING COIN FOR: {size}")
                 symbol = self.clients[exchange].markets[coin]
@@ -273,7 +275,9 @@ class Balancing(BaseTask):
                 mrkt = client.markets[coin]
                 if client.instruments[mrkt]['min_size'] <= size:
                     av_balances = client.get_available_balance()
-                    av_coin = av_balances.get(side) if av_balances.get(side) > 0 else av_balances.get(mrkt, {}).get(side)
+                    av_coin = av_balances.get(mrkt, {}).get(side)
+                    if not av_coin:
+                        av_coin = av_balances.get(side)
                     if av_coin > 0:
                         ob = await client.get_orderbook_by_symbol(mrkt)
                         change = ob['asks'][0][0] + ob['bids'][0][0]
