@@ -281,8 +281,11 @@ class Balancing(BaseTask):
                     if not av_coin:
                         av_coin = av_balances.get(side)
                     print(f"{mrkt=} {av_coin=}")
-                    if av_coin >= size:
-                        exchanges.append(ex)
+                    if av_coin > 0:
+                        ob = await client.get_orderbook_by_symbol(mrkt)
+                        change = ob['asks'][0][0] + ob['bids'][0][0]
+                        if av_coin * change >= size:
+                            exchanges.append(ex)
 
             except:
                 traceback.print_exc()
