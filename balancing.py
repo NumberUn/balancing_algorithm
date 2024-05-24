@@ -216,6 +216,7 @@ class Balancing(BaseTask):
             self.clients[exchange].orderbook[symbol] = ob
             if side == 'buy':
                 pretend_price = ob['asks'][0][0] + 5 * tick
+                top_exchange = exchange
                 if best_price:
                     if pretend_price < best_price:
                         top_exchange = exchange
@@ -225,6 +226,7 @@ class Balancing(BaseTask):
                     best_price = pretend_price
             else:
                 pretend_price = ob['bids'][0][0] - 5 * tick
+                top_exchange = exchange
                 if best_price:
                     if pretend_price > best_price:
                         top_exchange = exchange
@@ -246,14 +248,14 @@ class Balancing(BaseTask):
     @try_exc_async
     async def __balancing_positions(self, session: aiohttp.ClientSession) -> None:
         for coin, disbalance in self.disbalances.items():
-            # print(coin, disbalance)
             if abs(disbalance['usd']) > int(config['SETTINGS']['MIN_DISBALANCE']):
+                print(coin, disbalance)
                 side = 'sell' if disbalance['usd'] > 0 else 'buy'
                 self.disbalance_id = uuid.uuid4()  # noqa
             else:
                 continue
             exchange, price, size = await self.get_exchange_and_price(abs(disbalance['coin']), coin, side)
-            # print(f"BALANCING ON {exchange=}")
+            print(f"BALANCING ON {exchange=}")
             if exchange:
                 print(f"{exchange} BALANCING COIN FOR: {size}")
                 symbol = self.clients[exchange].markets[coin]
@@ -273,11 +275,12 @@ class Balancing(BaseTask):
         for ex, client in self.clients.items():
             try:
                 mrkt = client.markets[coin]
-                if client.instruments[mrkt]['min_size'] <= size:
+                if client.instruments[mrkt]['min_size'] <= abs(size):
                     av_balances = client.get_available_balance()
                     av_coin = av_balances.get(mrkt, {}).get(side)
                     if not av_coin:
                         av_coin = av_balances.get(side)
+                    print(f"{mrkt=} {av_coin=}")
                     if av_coin > 0:
                         ob = await client.get_orderbook_by_symbol(mrkt)
                         change = ob['asks'][0][0] + ob['bids'][0][0]
@@ -286,6 +289,7 @@ class Balancing(BaseTask):
 
             except:
                 traceback.print_exc()
+        print(exchanges)
         top_exchange, price, size = await self.get_top_price_exchange(size, exchanges, coin, side)
         return top_exchange, price, size
 
