@@ -284,7 +284,8 @@ class Balancing(BaseTask):
                     if av_coin > 0:
                         ob = await client.get_orderbook_by_symbol(mrkt)
                         change = ob['asks'][0][0] + ob['bids'][0][0]
-                        if av_coin * change >= size:
+                        print(f"{size=} {size * change}")
+                        if av_coin >= size * change:
                             exchanges.append(ex)
 
             except:
