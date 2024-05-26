@@ -290,6 +290,9 @@ class Balancing(BaseTask):
                         elif av_coin >= size * change * 0.95:
                             exchanges.append(ex)
                             size = size * 0.95
+                        elif av_coin > 300 and av_coin < size * change:
+                            size = av_coin / change
+                            exchanges.append(ex)
             except:
                 traceback.print_exc()
         print(exchanges)
