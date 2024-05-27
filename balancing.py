@@ -291,14 +291,28 @@ class Balancing(BaseTask):
                         print(f"{size=} {size * change}")
                         if av_coin >= size * change:
                             exchanges.append(ex)
-                        elif av_coin >= size * change * 0.95:
+                        elif av_coin >= size * change * 0.99:
                             exchanges.append(ex)
-                            size = size * 0.95
+                            size = size * 0.99
                         elif not len(exchanges) and av_coin < size * change:
                             size = av_coin / change
                             exchanges.append(ex)
             except:
                 traceback.print_exc()
+        if not len(exchanges):
+            for ex, client in self.clients.items():
+                mrkt = client.markets[coin]
+                if client.instruments[mrkt]['min_size'] <= abs(size):
+                    av_balances = client.get_available_balance()
+                    av_coin = av_balances.get(mrkt, {}).get(side)
+                    if not av_coin:
+                        av_coin = av_balances.get(side)
+                    if av_coin > 0:
+                        ob = client.get_orderbook(mrkt)
+                        change = ob['asks'][0][0] + ob['bids'][0][0]
+                        av_coin = av_balances.get(side)
+                        size = av_coin / change
+                        exchanges.append(ex)
         print(exchanges)
         top_exchange, price, size = await self.get_top_price_exchange(size, exchanges, coin, side)
         return top_exchange, price, size
