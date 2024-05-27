@@ -20,12 +20,13 @@ class Balancing(BaseTask):
     __slots__ = 'clients', 'positions', 'total_position', 'disbalances', \
                 'side', 'mq', 'session', 'open_orders', 'app', \
                 'chat_id', 'chat_token', 'env', 'disbalance_id', 'average_price', \
-                'orderbooks', 'telegram', 'last_positions' # noqa
+                'orderbooks', 'telegram', 'last_positions', 'last_tot_balance' # noqa
 
     def __init__(self):
         super().__init__()
         self.positions = {}
         self.last_positions = {}
+        self.last_tot_balance = 0
         self.__set_default()
         self.telegram = Telegram()
         self.orderbooks = {}
@@ -185,6 +186,9 @@ class Balancing(BaseTask):
             if abs(disbalance['usd']) > int(config['SETTINGS']['MIN_DISBALANCE']):
                 message += f"\nDISB, {coin}: {round(disbalance['coin'], 4)}"
                 message += f" (USD: {int(round(disbalance['usd'], 0))})"
+        if total_balance / self.last_tot_balance <= 0.99:
+            message += f"\n\nALERT! SIGNIFICANT BALANCE CHANGE: {self.last_tot_balance} -> {total_balance}"
+        self.last_tot_balance = total_balance
         return message
 
     @try_exc_async
