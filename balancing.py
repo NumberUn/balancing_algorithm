@@ -26,7 +26,7 @@ class Balancing(BaseTask):
         super().__init__()
         self.positions = {}
         self.last_positions = {}
-        self.last_tot_balance = 0
+        self.last_tot_balance = 1
         self.__set_default()
         self.telegram = Telegram()
         self.orderbooks = {}
