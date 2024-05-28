@@ -307,7 +307,6 @@ class Balancing(BaseTask):
                     if av_coin > 0:
                         ob = client.get_orderbook(mrkt)
                         change = ob['asks'][0][0] + ob['bids'][0][0]
-                        av_coin = av_balances.get(side)
                         size = av_coin / change
                         exchanges.append(ex)
         print(exchanges)
