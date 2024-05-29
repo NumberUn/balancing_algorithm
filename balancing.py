@@ -299,6 +299,9 @@ class Balancing(BaseTask):
         if not len(exchanges):
             for ex, client in self.clients.items():
                 mrkt = client.markets[coin]
+                if not client.instruments.get(mrkt) and ex == 'BITKUB':
+                    client.get_position()
+                    client.fill_instruments()
                 if client.instruments[mrkt]['min_size'] <= abs(size):
                     av_balances = client.get_available_balance()
                     av_coin = av_balances.get(mrkt, {}).get(side)
